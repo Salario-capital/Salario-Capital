@@ -1,0 +1,22 @@
+name: Gerar artigos
+
+on:
+  schedule:
+    - cron: "0 11 * * *"
+    - cron: "0 20 * * *"
+  workflow_dispatch:
+
+jobs:
+  gerar-artigo:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Baixar arquivos do projeto
+        uses: actions/checkout@v4
+
+      - name: Verificar configuração
+        run: |
+          echo "Projeto: Salário Capital"
+          echo "Artigos programados: 2 por dia"
+          cat config.json
+          cat temas.json
