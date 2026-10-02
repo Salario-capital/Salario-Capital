@@ -1,22 +1,54 @@
-name: Gerar artigos
+name: Testar Gemini
 
 on:
-  schedule:
-    - cron: "0 11 * * *"
-    - cron: "0 20 * * *"
   workflow_dispatch:
 
 jobs:
-  gerar-artigo:
+  testar-gemini:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Baixar arquivos do projeto
-        uses: actions/checkout@v4
-
-      - name: Verificar configuração
+      - name: Testar API do Gemini
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
-          echo "Projeto: Salário Capital"
-          echo "Artigos programados: 2 por dia"
-          cat config.json
-          cat temas.json
+          python - <<'PY'
+          import os
+          import json
+          import urllib.request
+
+          api_key = os.environ["GEMINI_API_KEY"]
+
+          url = (
+              "https://generativelanguage.googleapis.com/v1beta/models/"
+              "gemini-2.5-flash:generateContent"
+              "?key=" + api_key
+          )
+
+          data = {
+              "contents": [
+                  {
+                      "parts": [
+                          {
+                              "text": "Responda apenas: TESTE GEMINI OK"
+                          }
+                      ]
+                  }
+              ]
+          }
+
+          request = urllib.request.Request(
+              url,
+              data=json.dumps(data).encode("utf-8"),
+              headers={"Content-Type": "application/json"},
+              method="POST"
+          )
+
+          try:
+              with urllib.request.urlopen(request) as response:
+                  result = json.loads(response.read().decode("utf-8"))
+                  print(json.dumps(result, ensure_ascii=False, indent=2))
+          except Exception as e:
+              print("ERRO:", e)
+              raise
+          PY
