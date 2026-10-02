@@ -1,4 +1,3 @@
-```yaml
 name: Gerar artigos
 
 on:
@@ -58,11 +57,9 @@ jobs:
           - Crie uma introdução de aproximadamente 2 a 3 parágrafos.
           - Depois da introdução, desenvolva o assunto com 4 a 7 subtítulos.
           - Cada subtítulo deve ser curto, claro e descritivo.
-          - Cada subtítulo deve tratar de um aspecto importante do tema.
           - Cada seção deve ter 1 a 3 parágrafos.
           - Termine com uma conclusão objetiva.
 
-          IMPORTANTE:
           Retorne SOMENTE um JSON válido neste formato:
 
           {{
@@ -78,13 +75,6 @@ jobs:
                   "Primeiro parágrafo da seção.",
                   "Segundo parágrafo da seção."
                 ]
-              }},
-              {{
-                "subtitulo": "Segundo subtítulo",
-                "texto": [
-                  "Primeiro parágrafo da seção.",
-                  "Segundo parágrafo da seção."
-                ]
               }}
             ],
             "conclusao": [
@@ -93,10 +83,7 @@ jobs:
           }}
           """
 
-          url = (
-              "https://generativelanguage.googleapis.com/v1beta/models/"
-              "gemini-3.5-flash-lite:generateContent"
-          )
+          url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent"
 
           data = {
               "contents": [
@@ -129,9 +116,7 @@ jobs:
               print(e.read().decode("utf-8"))
               raise
 
-          texto = resultado["candidates"][0]["content"]["parts"][0]["text"]
-
-          texto = texto.strip()
+          texto = resultado["candidates"][0]["content"]["parts"][0]["text"].strip()
 
           if texto.startswith("```json"):
               texto = texto[7:]
@@ -143,13 +128,11 @@ jobs:
 
           artigo = json.loads(texto)
 
-          # Montar a introdução
           introducao_html = ""
 
           for paragrafo in artigo["introducao"]:
               introducao_html += "<p>" + paragrafo.strip() + "</p>\n"
 
-          # Montar as seções com subtítulos
           secoes_html = ""
 
           for secao in artigo["secoes"]:
@@ -158,13 +141,11 @@ jobs:
               for paragrafo in secao["texto"]:
                   secoes_html += "<p>" + paragrafo.strip() + "</p>\n"
 
-          # Montar a conclusão
           conclusao_html = ""
 
           for paragrafo in artigo["conclusao"]:
               conclusao_html += "<p>" + paragrafo.strip() + "</p>\n"
 
-          # Montar o conteúdo final
           html = (
               introducao_html
               + "\n<!--more-->\n\n"
@@ -214,4 +195,3 @@ jobs:
             git commit -m "Adicionar artigo gerado automaticamente"
             git push "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" HEAD:${{ github.ref_name }}
           fi
-```
