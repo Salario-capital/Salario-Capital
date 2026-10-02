@@ -11,24 +11,72 @@ jobs:
       - name: Baixar arquivos do projeto
         uses: actions/checkout@v4
 
-      - name: Testar geração do Gemini
+      - name: Gerar artigo com Gemini
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           python - <<'PY'
           import json
           import os
+          import random
           import urllib.request
           import urllib.error
 
-          url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent"
+          with open("config.json", "r", encoding="utf-8") as f:
+              config = json.load(f)
+
+          with open("temas.json", "r", encoding="utf-8") as f:
+              temas = json.load(f)
+
+          tema = random.choice(temas["temas"])
+
+          prompt = f"""
+          Você é o redator do blog Salário Capital.
+
+          Escreva um artigo original em português do Brasil sobre:
+
+          {tema}
+
+          O público é formado principalmente por pequenos investidores e pessoas
+          que querem melhorar sua vida financeira.
+
+          Regras:
+          - O artigo deve ter aproximadamente 1.000 a 1.500 palavras.
+          - Use linguagem simples, clara e profissional.
+          - Não invente dados, estatísticas, taxas, leis ou informações.
+          - Não faça promessas de lucro.
+          - Não dê recomendações financeiras personalizadas.
+          - Use subtítulos adequados.
+          - O artigo deve ser útil e educativo.
+          - Evite introduções genéricas.
+          - Não use emojis.
+          - Não coloque HTML.
+          - Não coloque Markdown.
+          - Crie uma introdução de aproximadamente 2 a 3 parágrafos.
+          - Depois da introdução, desenvolva o assunto com vários subtítulos.
+          - Termine com uma conclusão objetiva.
+
+          Retorne SOMENTE um JSON válido neste formato:
+
+          {{
+            "titulo": "Título do artigo",
+            "introducao": "Texto completo da introdução",
+            "conteudo": "Texto completo do desenvolvimento, sem a introdução",
+            "conclusao": "Texto da conclusão"
+          }}
+          """
+
+          url = (
+              "https://generativelanguage.googleapis.com/v1beta/models/"
+              "gemini-3.5-flash-lite:generateContent"
+          )
 
           data = {
               "contents": [
                   {
                       "parts": [
                           {
-                              "text": "Responda apenas: TESTE OK"
+                              "text": prompt
                           }
                       ]
                   }
@@ -49,14 +97,57 @@ jobs:
               with urllib.request.urlopen(request) as response:
                   resultado = json.loads(response.read().decode("utf-8"))
 
-              print("RESPOSTA DO GEMINI:")
-              print(json.dumps(resultado, ensure_ascii=False, indent=2))
-
           except urllib.error.HTTPError as e:
               print("ERRO HTTP:", e.code)
               print(e.read().decode("utf-8"))
               raise
-          PY
+
+          texto = resultado["candidates"][0]["content"]["parts"][0]["text"]
+
+          texto = texto.strip()
+
+          if texto.startswith("```json"):
+              texto = texto[7:]
+
+          if texto.endswith("```"):
+              texto = texto[:-3]
+
+          texto = texto.strip()
+
+          artigo = json.loads(texto)
+
+          html = (
+              "<p>" + artigo["introducao"].replace("\n\n", "</p><p>") + "</p>"
+              + "\n\n<!--more-->\n\n"
+              + "<p>" + artigo["conteudo"].replace("\n\n", "</p><p>") + "</p>"
+              + "\n\n<h2>Conclusão</h2>\n\n"
+              + "<p>" + artigo["conclusao"].replace("\n\n", "</p><p>") + "</p>"
+          )
+
+          try:
+              with open("artigos.json", "r", encoding="utf-8") as f:
+                  historico = json.load(f)
+          except FileNotFoundError:
+              historico = {"artigos": []}
+
+          historico["artigos"].append({
+              "titulo": artigo["titulo"],
+              "tema": tema,
+              "conteudo": html
+          })
+
+          with open("artigos.json", "w", encoding="utf-8") as f:
+              json.dump(
+                  historico,
+                  f,
+                  ensure_ascii=False,
+                  indent=2
+              )
+
+          print("Artigo gerado com sucesso!")
+          print("Tema:", tema)
+          print("Título:", artigo["titulo"])
+          print("Marcador de expansão inserido após a introdução.")
 
       - name: Salvar artigo no repositório
         run: |
