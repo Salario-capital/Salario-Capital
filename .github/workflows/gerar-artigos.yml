@@ -96,7 +96,6 @@ jobs:
 
           texto = resultado["candidates"][0]["content"]["parts"][0]["text"]
 
-          # Remover possíveis marcadores de bloco JSON
           texto = texto.strip()
 
           if texto.startswith("```json"):
@@ -145,3 +144,17 @@ jobs:
           print("Título:", artigo["titulo"])
           print("Marcador de expansão inserido após a introdução.")
           PY
+
+      - name: Salvar artigo no repositório
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add artigos.json
+
+          if git diff --cached --quiet; then
+            echo "Nenhuma alteração para salvar."
+          else
+            git commit -m "Adicionar artigo gerado automaticamente"
+            git push
+          fi
