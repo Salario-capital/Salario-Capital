@@ -3,6 +3,9 @@ name: Gerar artigos
 on:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   gerar-artigo:
     runs-on: ubuntu-latest
@@ -150,6 +153,8 @@ jobs:
           print("Marcador de expansão inserido após a introdução.")
 
       - name: Salvar artigo no repositório
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -160,5 +165,5 @@ jobs:
             echo "Nenhuma alteração para salvar."
           else
             git commit -m "Adicionar artigo gerado automaticamente"
-            git push
+            git push "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" HEAD:${{ github.ref_name }}
           fi
