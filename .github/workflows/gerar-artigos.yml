@@ -1,3 +1,4 @@
+```yaml
 name: Gerar artigos
 
 on:
@@ -49,23 +50,46 @@ jobs:
           - Não invente dados, estatísticas, taxas, leis ou informações.
           - Não faça promessas de lucro.
           - Não dê recomendações financeiras personalizadas.
-          - Use subtítulos adequados.
           - O artigo deve ser útil e educativo.
           - Evite introduções genéricas.
           - Não use emojis.
           - Não coloque HTML.
           - Não coloque Markdown.
           - Crie uma introdução de aproximadamente 2 a 3 parágrafos.
-          - Depois da introdução, desenvolva o assunto com vários subtítulos.
+          - Depois da introdução, desenvolva o assunto com 4 a 7 subtítulos.
+          - Cada subtítulo deve ser curto, claro e descritivo.
+          - Cada subtítulo deve tratar de um aspecto importante do tema.
+          - Cada seção deve ter 1 a 3 parágrafos.
           - Termine com uma conclusão objetiva.
 
+          IMPORTANTE:
           Retorne SOMENTE um JSON válido neste formato:
 
           {{
             "titulo": "Título do artigo",
-            "introducao": "Texto completo da introdução",
-            "conteudo": "Texto completo do desenvolvimento, sem a introdução",
-            "conclusao": "Texto da conclusão"
+            "introducao": [
+              "Primeiro parágrafo da introdução.",
+              "Segundo parágrafo da introdução."
+            ],
+            "secoes": [
+              {{
+                "subtitulo": "Primeiro subtítulo",
+                "texto": [
+                  "Primeiro parágrafo da seção.",
+                  "Segundo parágrafo da seção."
+                ]
+              }},
+              {{
+                "subtitulo": "Segundo subtítulo",
+                "texto": [
+                  "Primeiro parágrafo da seção.",
+                  "Segundo parágrafo da seção."
+                ]
+              }}
+            ],
+            "conclusao": [
+              "Primeiro parágrafo da conclusão."
+            ]
           }}
           """
 
@@ -119,12 +143,34 @@ jobs:
 
           artigo = json.loads(texto)
 
+          # Montar a introdução
+          introducao_html = ""
+
+          for paragrafo in artigo["introducao"]:
+              introducao_html += "<p>" + paragrafo.strip() + "</p>\n"
+
+          # Montar as seções com subtítulos
+          secoes_html = ""
+
+          for secao in artigo["secoes"]:
+              secoes_html += "<h2>" + secao["subtitulo"].strip() + "</h2>\n"
+
+              for paragrafo in secao["texto"]:
+                  secoes_html += "<p>" + paragrafo.strip() + "</p>\n"
+
+          # Montar a conclusão
+          conclusao_html = ""
+
+          for paragrafo in artigo["conclusao"]:
+              conclusao_html += "<p>" + paragrafo.strip() + "</p>\n"
+
+          # Montar o conteúdo final
           html = (
-              "<p>" + artigo["introducao"].replace("\n\n", "</p><p>") + "</p>"
-              + "\n\n<!--more-->\n\n"
-              + "<p>" + artigo["conteudo"].replace("\n\n", "</p><p>") + "</p>"
-              + "\n\n<h2>Conclusão</h2>\n\n"
-              + "<p>" + artigo["conclusao"].replace("\n\n", "</p><p>") + "</p>"
+              introducao_html
+              + "\n<!--more-->\n\n"
+              + secoes_html
+              + "\n<h2>Conclusão</h2>\n"
+              + conclusao_html
           )
 
           try:
@@ -151,6 +197,7 @@ jobs:
           print("Tema:", tema)
           print("Título:", artigo["titulo"])
           print("Marcador de expansão inserido após a introdução.")
+          print("Subtítulos estruturados como H2.")
 
       - name: Salvar artigo no repositório
         env:
@@ -167,3 +214,4 @@ jobs:
             git commit -m "Adicionar artigo gerado automaticamente"
             git push "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" HEAD:${{ github.ref_name }}
           fi
+```
